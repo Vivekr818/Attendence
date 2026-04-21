@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attendance</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #181c27;
+    --surface2: #1e2333;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8eaf0;
+    --muted: #6b7385;
+    --present: #22c55e;
+    --absent: #f87171;
+    --present-bg: rgba(34,197,94,0.1);
+    --absent-bg: rgba(248,113,113,0.1);
+    --accent: #6366f1;
+    --accent-hover: #818cf8;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; padding: 32px 24px 80px; }
+
+  .header { max-width: 780px; margin: 0 auto 28px; }
+  .header-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+  .title-block h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; }
+  .title-block .date { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .session-tag { font-family: var(--mono); font-size: 11px; background: rgba(99,102,241,0.12); color: var(--accent-hover); border: 1px solid rgba(99,102,241,0.25); border-radius: 20px; padding: 4px 12px; align-self: flex-start; white-space: nowrap; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-width: 780px; margin: 0 auto 20px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .stat .val { font-size: 26px; font-weight: 600; font-family: var(--mono); line-height: 1; margin-bottom: 4px; }
+  .stat .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .stat.s-present .val { color: var(--present); }
+  .stat.s-absent .val { color: var(--absent); }
+  .stat.s-unmarked .val { color: var(--muted); }
+
+  .toolbar { display: flex; align-items: center; gap: 8px; max-width: 780px; margin: 0 auto 14px; flex-wrap: wrap; }
+  .toolbar input { flex: 1; min-width: 160px; background: var(--surface); border: 1px solid var(--border2); border-radius: 8px; color: var(--text); font-family: var(--sans); font-size: 13px; padding: 8px 12px; outline: none; }
+  .toolbar input::placeholder { color: var(--muted); }
+  .toolbar input:focus { border-color: var(--accent); }
+  .btn { font-family: var(--sans); font-size: 12px; font-weight: 500; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border2); background: var(--surface); color: var(--text); cursor: pointer; transition: background 0.15s, border-color 0.15s; white-space: nowrap; }
+  .btn:hover { background: var(--surface2); border-color: var(--border2); }
+  .btn.present { border-color: rgba(34,197,94,0.3); color: var(--present); }
+  .btn.present:hover { background: var(--present-bg); }
+  .btn.absent { border-color: rgba(248,113,113,0.3); color: var(--absent); }
+  .btn.absent:hover { background: var(--absent-bg); }
+
+  .table-wrap { max-width: 780px; margin: 0 auto; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { padding: 11px 16px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 500; text-align: left; border-bottom: 1px solid var(--border); background: var(--surface2); }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.12s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(255,255,255,0.02); }
+  tbody tr.row-present { background: rgba(34,197,94,0.04); }
+  tbody tr.row-absent { background: rgba(248,113,113,0.04); }
+  td { padding: 11px 16px; font-size: 13px; vertical-align: middle; }
+  .td-num { font-family: var(--mono); font-size: 11px; color: var(--muted); width: 36px; }
+  .td-name { font-weight: 500; }
+  .td-roll { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .badge { display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px; }
+  .badge.p { background: var(--present-bg); color: var(--present); border: 1px solid rgba(34,197,94,0.2); }
+  .badge.a { background: var(--absent-bg); color: var(--absent); border: 1px solid rgba(248,113,113,0.2); }
+  .badge.u { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .td-time { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .row-btns { display: flex; gap: 5px; }
+  .mark-btn { font-family: var(--mono); font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.12s; }
+  .mark-btn:hover { background: var(--surface2); color: var(--text); }
+  .mark-btn.active-p { background: var(--present-bg); border-color: rgba(34,197,94,0.3); color: var(--present); }
+  .mark-btn.active-a { background: var(--absent-bg); border-color: rgba(248,113,113,0.3); color: var(--absent); }
+  .td-notes input { background: transparent; border: none; border-bottom: 1px solid transparent; font-family: var(--sans); font-size: 12px; color: var(--muted); outline: none; width: 100%; transition: border-color 0.15s; }
+  .td-notes input:focus { border-bottom-color: var(--border2); color: var(--text); }
+  .td-notes input::placeholder { color: #3a3f50; }
+
+  .footer { max-width: 780px; margin: 20px auto 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .footer-note { font-size: 12px; color: var(--muted); }
+  .submit-btn { font-family: var(--sans); font-size: 13px; font-weight: 600; padding: 10px 28px; border-radius: 10px; border: none; background: var(--accent); color: #fff; cursor: pointer; transition: background 0.15s, transform 0.1s, box-shadow 0.15s; box-shadow: 0 0 0 0 rgba(99,102,241,0); letter-spacing: 0.01em; }
+  .submit-btn:hover { background: var(--accent-hover); box-shadow: 0 0 20px rgba(99,102,241,0.3); }
+  .submit-btn:active { transform: scale(0.98); }
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* Toast */
+  #toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(60px); background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px; padding: 12px 20px; font-size: 13px; display: flex; align-items: center; gap: 10px; opacity: 0; transition: all 0.3s; z-index: 100; white-space: nowrap; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast .tick { width: 18px; height: 18px; background: var(--present); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 10px; }
+
+  /* History panel */
+  .history-wrap { max-width: 780px; margin: 24px auto 0; }
+  .history-toggle { background: none; border: none; color: var(--muted); font-family: var(--sans); font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 0; }
+  .history-toggle:hover { color: var(--text); }
+  .history-panel { display: none; margin-top: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .history-panel.open { display: block; }
+  .history-header { padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; display: flex; justify-content: space-between; align-items: center; }
+  .history-entry { padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .history-entry:last-child { border-bottom: none; }
+  .history-entry .h-time { font-family: var(--mono); font-size: 11px; color: var(--muted); min-width: 130px; }
+  .history-entry .h-summary { color: var(--text); }
+  .history-entry .h-tag { font-family: var(--mono); font-size: 10px; padding: 2px 7px; border-radius: 4px; background: rgba(99,102,241,0.15); color: var(--accent-hover); }
+  .clear-history { font-size: 11px; font-family: var(--mono); color: var(--muted); background: none; border: none; cursor: pointer; }
+  .clear-history:hover { color: var(--absent); }
+
+  .no-records { padding: 20px 16px; text-align: center; color: var(--muted); font-size: 12px; }
+
+  @media (max-width: 560px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    thead th:nth-child(4), td:nth-child(4) { display: none; }
+    thead th:nth-child(6), td:nth-child(6) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="title-block">
+      <h1>Attendance</h1>
+      <div class="date" id="datestr"></div>
+    </div>
+    <span class="session-tag" id="session-tag">Session — —</span>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="val" id="s-total">15</div><div class="lbl">Total</div></div>
+  <div class="stat s-present"><div class="val" id="s-present">0</div><div class="lbl">Present</div></div>
+  <div class="stat s-absent"><div class="val" id="s-absent">0</div><div class="lbl">Absent</div></div>
+  <div class="stat s-unmarked"><div class="val" id="s-unmarked">15</div><div class="lbl">Unmarked</div></div>
+</div>
+
+<div class="toolbar">
+  <input type="text" id="search" placeholder="Search student..." oninput="renderTable()">
+  <button class="btn present" onclick="markAll('present')">All Present</button>
+  <button class="btn absent" onclick="markAll('absent')">All Absent</button>
+  <button class="btn" onclick="clearAll()">Reset</button>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Student</th>
+        <th>Roll</th>
+        <th>Status</th>
+        <th>Marked at</th>
+        <th>Notes</th>
+        <th>Mark</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<div class="footer">
+  <span class="footer-note" id="footer-note">0 of 15 marked</span>
+  <button class="submit-btn" id="submit-btn" onclick="submitAttendance()">Submit Attendance</button>
+</div>
+
+<div class="history-wrap">
+  <button class="history-toggle" onclick="toggleHistory()">
+    <span id="hist-arrow">▸</span> Submission history (<span id="hist-count">0</span>)
+  </button>
+  <div class="history-panel" id="history-panel">
+    <div class="history-header">
+      <span>Past submissions</span>
+    </div>
+    <div id="history-list"></div>
+  </div>
+</div>
+
+<div id="toast"><div class="tick">✓</div><span id="toast-msg">Attendance submitted!</span></div>
+
+<script>
+let students = [];
+
+const state = {};
+
+function ftime(d) {
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+function fdate(d) {
+  return d.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+const now = new Date();
+document.getElementById('datestr').textContent = fdate(now);
+document.getElementById('session-tag').textContent =
+  `Session · ${now.toLocaleString('default', { month: 'short', day: 'numeric' })} · ${now.getHours() < 12 ? 'Morning' : now.getHours() < 17 ? 'Afternoon' : 'Evening'}`;
+
+function renderTable() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const tb = document.getElementById('tbody');
+  tb.innerHTML = '';
+  let p = 0, a = 0, u = 0, shown = 0;
+
+  students.forEach((s, i) => {
+    const st = state[s.roll];
+    if (st.status === 'present') p++;
+    else if (st.status === 'absent') a++;
+    else u++;
+    if (q && !s.name.toLowerCase().includes(q) && !s.roll.toLowerCase().includes(q)) return;
+    shown++;
+    const tr = document.createElement('tr');
+    if (st.status) tr.className = `row-${st.status}`;
+    tr.innerHTML = `
+      <td class="td-num">${i + 1}</td>
+      <td class="td-name">${s.name}</td>
+      <td class="td-roll">${s.roll}</td>
+      <td>${statusBadge(st.status)}</td>
+      <td class="td-time">${st.time || '—'}</td>
+      <td class="td-notes"><input type="text" placeholder="Add note…" value="${escHtml(st.note)}" oninput="setNote('${s.roll}', this.value)"></td>
+      <td><div class="row-btns">
+        <button class="mark-btn${st.status === 'present' ? ' active-p' : ''}" onclick="mark('${s.roll}','present')">P</button>
+        <button class="mark-btn${st.status === 'absent' ? ' active-a' : ''}" onclick="mark('${s.roll}','absent')">A</button>
+      </div></td>
+    `;
+    tb.appendChild(tr);
+  });
+
+  document.getElementById('s-total').textContent = students.length;
+  document.getElementById('s-present').textContent = p;
+  document.getElementById('s-absent').textContent = a;
+  document.getElementById('s-unmarked').textContent = u;
+
+  const marked = p + a;
+  document.getElementById('footer-note').textContent = `${marked} of ${students.length} marked`;
+  document.getElementById('submit-btn').disabled = marked === 0;
+}
+
+function statusBadge(status) {
+  if (status === 'present') return `<span class="badge p">● Present</span>`;
+  if (status === 'absent')  return `<span class="badge a">● Absent</span>`;
+  return `<span class="badge u">— Unmarked</span>`;
+}
+
+function escHtml(s) { return s.replace(/"/g, '&quot;'); }
+
+function mark(roll, status) {
+  const st = state[roll];
+  if (st.status === status) {
+    state[roll] = { ...st, status: null, time: null };
+  } else {
+    state[roll] = { ...st, status, time: ftime(new Date()) };
+  }
+  renderTable();
+}
+
+function setNote(roll, val) { state[roll].note = val; }
+
+function markAll(status) {
+  const t = ftime(new Date());
+  students.forEach(s => state[s.roll] = { ...state[s.roll], status, time: t });
+  renderTable();
+}
+
+function clearAll() {
+  students.forEach(s => state[s.roll] = { ...state[s.roll], status: null, time: null });
+  renderTable();
+}
+
+/* ── LOAD STUDENTS ── */
+async function loadStudents() {
+  try {
+    const res = await fetch('/api/students');
+    if (!res.ok) throw new Error('Failed to load students');
+    students = await res.json();
+    students.forEach(s => {
+      state[s.roll] = { name: s.name, status: null, time: null, note: '' };
+    });
+    renderTable();
+  } catch (err) {
+    document.getElementById('tbody').innerHTML =
+      '<tr><td colspan="7" style="text-align:center;color:var(--absent);padding:20px">Failed to load students. Please refresh.</td></tr>';
+    document.getElementById('submit-btn').disabled = true;
+  }
+}
+
+async function init() {
+  await loadStudents();
+  await loadHistory();
+}
+
+/* ── SUBMIT ── */
+async function submitAttendance() {
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  const submitTime = new Date();
+  const payload = {
+    submittedAt: submitTime.toISOString(),
+    date: submitTime.toLocaleDateString(),
+    records: students.map(s => ({
+      roll: s.roll,
+      name: s.name,
+      status: state[s.roll].status || 'unmarked',
+      markedAt: state[s.roll].time || null,
+      note: state[s.roll].note || '',
+    }))
+  };
+
+  try {
+    const res = await fetch('/api/attendance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      showToast(err.error || 'Submission failed');
+      return;
+    }
+    const p = payload.records.filter(r => r.status === 'present').length;
+    const a = payload.records.filter(r => r.status === 'absent').length;
+    showToast(`Submitted · ${p}P / ${a}A`);
+    loadHistory();
+  } catch (err) {
+    showToast('Network error — submission failed');
+  } finally {
+    btn.textContent = 'Submit Attendance';
+    btn.disabled = false;
+  }
+}
+
+/* ── HISTORY ── */
+async function loadHistory() {
+  const list = document.getElementById('history-list');
+  try {
+    const res = await fetch('/api/attendance');
+    if (!res.ok) throw new Error('Failed to load history');
+    const stored = await res.json();
+
+    document.getElementById('hist-count').textContent = stored.length;
+
+    if (stored.length === 0) {
+      list.innerHTML = '<div class="no-records">No submissions yet</div>';
+      return;
+    }
+
+    list.innerHTML = stored.map(entry => {
+      const p = entry.records.filter(r => r.status === 'present').length;
+      const a = entry.records.filter(r => r.status === 'absent').length;
+      const u = entry.records.filter(r => r.status === 'unmarked').length;
+      const d = new Date(entry.submittedAt);
+      return `
+        <div class="history-entry">
+          <span class="h-time">${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>
+          <span class="h-summary">${p} present · ${a} absent · ${u} unmarked</span>
+          <span class="h-tag">saved</span>
+        </div>`;
+    }).join('');
+  } catch (err) {
+    list.innerHTML = '<div class="no-records" style="color:var(--absent)">Failed to load history</div>';
+  }
+}
+
+function toggleHistory() {
+  const panel = document.getElementById('history-panel');
+  const arrow = document.getElementById('hist-arrow');
+  panel.classList.toggle('open');
+  arrow.textContent = panel.classList.contains('open') ? '▾' : '▸';
+  if (panel.classList.contains('open')) loadHistory();
+}
+
+/* ── TOAST ── */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+init();
+</script>
+</body>
+</html>
