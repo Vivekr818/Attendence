@@ -107,9 +107,42 @@
   .no-records { padding: 20px 16px; text-align: center; color: var(--muted); font-size: 12px; }
 
   @media (max-width: 560px) {
-    .stats { grid-template-columns: repeat(2, 1fr); }
-    thead th:nth-child(4), td:nth-child(4) { display: none; }
+    body { padding: 20px 12px 60px; }
+
+    /* Header */
+    .title-block h1 { font-size: 18px; }
+    .title-block .date { font-size: 11px; }
+
+    /* Stats: 2-column grid, tighter */
+    .stats { grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 14px; }
+    .stat { padding: 10px 12px; }
+    .stat .val { font-size: 22px; }
+
+    /* Toolbar: search full-width, buttons wrap into a row */
+    .toolbar { gap: 6px; }
+    .toolbar input { width: 100%; min-width: unset; flex: unset; }
+    .btn { flex: 1; text-align: center; font-size: 11px; padding: 7px 8px; }
+
+    /* Table: horizontally scrollable, don't clip */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 10px; }
+    table { min-width: 340px; }
+    td, thead th { padding: 9px 10px; font-size: 12px; }
+
+    /* Hide: Status (col 4), Marked at (col 5), Notes (col 6) */
+    thead th:nth-child(4), td:nth-child(4),
+    thead th:nth-child(5), td:nth-child(5),
     thead th:nth-child(6), td:nth-child(6) { display: none; }
+
+    /* Footer: stack note above button */
+    .footer { flex-direction: column; align-items: stretch; gap: 8px; }
+    .submit-btn { width: 100%; text-align: center; }
+
+    /* Toast: full-width with margin */
+    #toast { width: calc(100% - 24px); white-space: normal; text-align: center; }
+
+    /* History entries: stack time above summary */
+    .history-entry { flex-direction: column; align-items: flex-start; gap: 4px; }
+    .history-entry .h-time { min-width: unset; }
   }
 </style>
 </head>
